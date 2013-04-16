@@ -1,14 +1,22 @@
-import sys, random
+#!/usr/bin/python
+import argparse, random
 
 def main():
-	if len(sys.argv) < 5:
-		print("usage: generateBenchmark.py <ICPC> <ML> <SL> <SC>")
-	icpc = float(sys.argv[1])
-	ml = int(sys.argv[2])
-	sl = int(sys.argv[3])
-	sc = int(sys.argv[4])
-	sequences = generateSequences(sc, sl)
-	
+	parser = argparse.ArgumentParser(description='Motif benchmark generator', formatter_class=argparse.RawDescriptionHelpFormatter,
+		epilog='''Generates the following files (optionally prefixed by prefix):
+  * sequences.fa
+  * sites.txt
+  * motif.txt
+  * motiflength.txt''')
+	parser.add_argument('ICPC', type=int, help='The information content per column')
+	parser.add_argument('ML', type=int, help='The motif length')
+	parser.add_argument('SL', type=int, help='The length of the generated sequences')
+	parser.add_argument('SC', type=int, help='The number of sequences to generate')
+	parser.add_argument('--prefix', type=str, help='Prefix output files with this string', default='')
+	args = parser.parse_args()
+
+	sequences = generateSequences(args.SC, args.SL)
+
 def generateSequence(sl):
 	seq = ""
 	for _ in range(sl):
