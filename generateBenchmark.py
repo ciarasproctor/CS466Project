@@ -8,7 +8,7 @@ def main():
   * sites.txt
   * motif.txt
   * motiflength.txt''')
-	parser.add_argument('ICPC', type=int, help='The information content per column')
+	parser.add_argument('ICPC', type=float, help='The information content per column')
 	parser.add_argument('ML', type=int, help='The motif length')
 	parser.add_argument('SL', type=int, help='The length of the generated sequences')
 	parser.add_argument('SC', type=int, help='The number of sequences to generate')
@@ -46,17 +46,7 @@ def generateMotif(ml, icpc, sc):
 		return generateMotifIC2(ml,sc)
 	if icpc == 1:
 		return generateMotifIC1(ml,sc)
-	target = ml*icpc*-1.0
-	pwm = numpy.zeros(shape=(ml, 4))
-	for row in range(ml):
-		generateMotifColumns(pwm, row, sc)
-	#fix information content
-	ic = getInformationContent(pwm,sc)
-	while ic != target:
-		pwm = adjustInformationContent(pwm,sc,ic,target)
-		ic = getInformationContent(pwm,sc)
-		print('ic: %.20f' % ic)
-	return pwm
+	return generateMotifIC15(ml,sc)
 
 def generateMotifIC2(ml,sc):
 	pwm = numpy.zeros(shape=(ml,4))
@@ -82,73 +72,15 @@ def generateMotifIC1Columns(pwm,row,sc):
 	pwm[row,c1] = sc/2
 	pwm[row,c2] = sc - pwm[row,c1]
 
-def changeInIC(sc,c1,c2,x):
-	if x == 0:
-		return 0
-	newIC = getInformationContentBase(c1+x,sc) + getInformationContentBase(c2-x,sc)
-	oldIC = getInformationContentBase(c1,sc) + getInformationContentBase(c2,sc)
-	return abs(newIC) - abs(oldIC)
-
-def adjustInformationContent(pwm,sc,ic,target):
-	bound = target-ic
-	if ic < target:
-		return raiseInformationContent(pwm,sc,bound)
-	else:
-		return lowerInformationContent(pwm,sc,bound)
-
-def getCellsChange(pwm):
-	rowNum = random.randint(0,len(pwm)-1)
-	cols = [0,1,2,3]
-	colNum1 = random.choice(cols)
-	cols.remove(colNum1)
-	colNum2 = random.choice(cols)
-	changeValue = random.randint(0,pwm[rowNum,colNum2])
-	return (rowNum,colNum1,colNum2,changeValue)
-
-def raiseInformationContent(pwm,sc,bound):
-	(rowNum,colNum1,colNum2,change) = getCellsChange(pwm)
-	icChange = changeInIC(sc,pwm[rowNum,colNum1],pwm[rowNum,colNum2],change)
-	while icChange <= 0.0 and icChange > bound:
-		(rowNum,colNum1,colNum2,change) = getCellsChange(pwm)
-		icChange = changeInIC(sc,pwm[rowNum,colNum1],pwm[rowNum,colNum2],change)
-	pwm[rowNum,colNum1] = pwm[rowNum,colNum1] + change
-	pwm[rowNum,colNum2] = pwm[rowNum,colNum2] - change
-	print('raised by: %.20f' % icChange)
+def generateMotifIC15(ml,sc):
+	pwm = numpy.zeros(shape=(ml,4))
+	for row in range(ml):
+		cm = random.randint(0,1)
+		if cm == 0:
+			generateMotifIC1Columns(pwm,row,sc)
+		else:
+			generateMotifIC2Columns(pwm,row,sc)
 	return pwm
-	
-def lowerInformationContent(pwm,sc,bound):
-	(rowNum,colNum1,colNum2,change) = getCellsChange(pwm)
-	icChange = changeInIC(sc,pwm[rowNum,colNum1],pwm[rowNum,colNum2],change)
-	while icChange >= 0.0 and icChange < bound:
-		(rowNum,colNum1,colNum2,change) = getCellsChange(pwm)
-		icChange = changeInIC(sc,pwm[rowNum,colNum1],pwm[rowNum,colNum2],change)
-	pwm[rowNum,colNum1] = pwm[rowNum,colNum1] + change
-	pwm[rowNum,colNum2] = pwm[rowNum,colNum2] - change
-	print('lowered by: %.20f' % icChange)
-	return pwm	
-
-def generateMotifColumns(pwm, row, sc):
-	samples = sc
-	nucleotides = [0,1,2,3]
-	for _ in range(3):
-		col = random.choice(nucleotides)
-		nucleotides.remove(col)
-		frequency = random.randint(0,samples)
-		pwm[row,col] = frequency
-		samples = samples - frequency
-	pwm[row,random.choice(nucleotides)] = samples
-
-def getInformationContent(pwm, sc):
-	ic = 0
-	for (x,y), value in numpy.ndenumerate(pwm):
-		if value != 0:
-			ic = ic + getInformationContentBase(value,sc)
-	return ic
-
-def getInformationContentBase(value,sc):
-	if value == 0:
-		return 0
-	return value/sc * math.log((value/sc)/.25,2)
 
 def generateBindingSites(motif,sc):
 	bindingSites = []
