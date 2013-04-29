@@ -17,10 +17,10 @@ def weighted_choice(weights):
 		running_total += w
 		totals.append(running_total)
 
-		rnd = random.random() * running_total
-		for i, total in enumerate(totals):
-			if rnd < total:
-				return i
+	rnd = random.random() * running_total
+	for i, total in enumerate(totals):
+		if rnd < total:
+			return i
 
 class NGram:
 	def __init__(self, sequence, n):
@@ -58,7 +58,7 @@ class MotifFinder:
 
 		# initialize the alignments randomly
 		for (i, a) in enumerate(self.alignments):
-			self.alignments[i] = random.randint(0, len(self.sequence(i)) - 1)
+			self.alignments[i] = random.randint(0, len(self.sequence(i)) - self.motif_length - 1)
 
 	def sequence(self, i):
 		key = self.sequences.keys()[i]
@@ -70,10 +70,13 @@ class MotifFinder:
 	def gibbs_sampler(self):
 		z = random.randint(0, self.sequence_count - 1)
 		sequence = self.sequence(z)
-		self.predictive_update(z)
+		debug('selected: %d: \"%s\"' % (z, sequence))
 
+		self.predictive_update(z)
+		debug(self)
 		self.alignments[z] = self.sample(self.sequence(z))
 
+		debug('changed alignment[%d] to %d' % (z, self.alignments[z]))
 		debug(self)
 
 	def predictive_update(self, z):
@@ -86,13 +89,18 @@ class MotifFinder:
 				start = self.alignments[s]
 				sequence = self.sequence(s)
 				end = self.motif_length + start - 1
-				for (i, base) in enumerate(sequence):
+				for i in range(0, len(sequence)):
+					base = sequence[i]
 					j = self.base_index(base)
 					if i < start or i > end:
 						background_counts[j] += 1
 						background_total += 1
 					else:
 						counts[i - start, j] += 1
+
+		debug('counts = %s' % counts)
+		debug('background_counts = %s' % background_counts)
+		debug('background_total = %d' % background_total)
 
 		# update the residue frequencies
 		for i in range(0, self.motif_length):
@@ -115,22 +123,30 @@ class MotifFinder:
 		likelihoods_total = 0
 		for start in range(0, max_start):
 			likelihoods[start] = self.likelihood(sequence, start)
+			debug('= %f' % likelihoods[start])
 			likelihoods_total += likelihoods[start]
+
+		debug('likelihoods = %s' % likelihoods)
+		debug('likelihoods_total = %f' % likelihoods_total)
 
 		# normalize the likelihoods
 		multiplier = 1 / likelihoods_total
-		for likelihood in likelihoods:
-			likelihood *= multiplier
+		debug('multiplier = %f' % multiplier)
+		for i in range(0, len(likelihoods)):
+			likelihoods[i] *= multiplier
+
+		debug('likelihoods (normalized) = %s' % likelihoods)
 
 		return weighted_choice(likelihoods)
 
 	def likelihood(self, sequence, start):
 		motif_probability = 1
 		background_probability = 1
-		for (i, base) in enumerate(itertools.islice(sequence, start, self.motif_length)):
+		for (i, base) in enumerate(itertools.islice(sequence, start, start + self.motif_length)):
 			base_index = self.base_index(base)
 			motif_probability *= self.residue_frequencies[i, base_index]
 			background_probability *= self.background_frequencies[base_index]
+			debug('%s(%d): %f/%f' % (base, base_index, self.residue_frequencies[i, base_index], self.background_frequencies[base_index]))
 
 		return motif_probability / background_probability
 
@@ -181,7 +197,8 @@ def main():
 	for i in range(0, args.iterations):
 		finder.gibbs_sampler()
 
-	print "Motif: %s" % finder.alignments
+	print "Motif: %s" % finder.residue_frequencies
+	print "Sites: %s" % finder.alignments
 
 if __name__ == '__main__':
 	main()
