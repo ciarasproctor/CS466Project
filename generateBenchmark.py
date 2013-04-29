@@ -12,22 +12,20 @@ def main():
 	parser.add_argument('ML', type=int, help='The motif length')
 	parser.add_argument('SL', type=int, help='The length of the generated sequences')
 	parser.add_argument('SC', type=int, help='The number of sequences to generate')
-	parser.add_argument('--prefix', type=str, help='Prefix output files with this string', default='')
+	parser.add_argument('directory', type=str, help='Write output files to this directory', default='.')
 	args = parser.parse_args()
 
-	createSubdirectory(args.prefix)
+	createSubdirectory(args.directory)
 	sequences = generateSequences(args.SC, args.SL)
 	motif = generateMotif(args.ML, args.ICPC, args.SC)
 	bindingSites = generateBindingSites(motif,args.SC)
 	sites = plantBindingSites(sequences,bindingSites, args.SL, args.ML)
-	writeSequences(sequences,args.prefix)
-	writeSites(sites,args.prefix)
-	writeMotif(motif,args.ML,args.prefix)
-	writeMotifLength(args.ML,args.prefix)
+	writeSequences(sequences,args.directory)
+	writeSites(sites,args.directory)
+	writeMotif(motif,args.ML,args.directory)
+	writeMotifLength(args.ML,args.directory)
 
 def createSubdirectory(dirName):
-	if dirName == "":
-		return
 	if not os.path.exists(dirName):
 		os.makedirs(dirName)
 
@@ -170,7 +168,7 @@ def writeSequences(sequences,prefix):
 	f = open(os.path.join(prefix,'sequences.fa'), 'w')
 	lines = []
 	for i in range(len(sequences)):
-		f.write('< seq%d \n' % i)
+		f.write('>%d \n' % i)
 		f.write(sequences[i]+'\n')
 	f.writelines(lines)
 	f.close()
@@ -190,12 +188,12 @@ def writeMotif(pwm,ml,prefix):
 			rowText += str(cell) + " "
 		rowText=rowText.strip()
 		f.write(rowText+'\n')
-	f.write('<')	
+	f.write('<\n')
 	f.close()
 
 def writeMotifLength(ml,prefix):
 	f = open(os.path.join(prefix,'motiflength.txt'),'w')
-	f.write(str(ml))
+	f.write('%s\n' % str(ml))
 	f.close()
 
 if __name__ == '__main__':
