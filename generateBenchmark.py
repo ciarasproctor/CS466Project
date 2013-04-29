@@ -46,6 +46,8 @@ def generateSequences(sc, sl):
 def generateMotif(ml, icpc, sc):
 	if icpc == 2:
 		return generateMotifIC2(ml,sc)
+	if icpc == 1:
+		return generateMotifIC1(ml,sc)
 	target = ml*icpc*-1.0
 	pwm = numpy.zeros(shape=(ml, 4))
 	for row in range(ml):
@@ -68,6 +70,20 @@ def generateMotifIC2Columns(pwm,row,sc):
 	colNum = random.randint(0,3)
 	pwm[row,colNum] = sc
 
+def generateMotifIC1(ml,sc):
+	pwm = numpy.zeros(shape=(ml,4))
+	for row in range(ml):
+		generateMotifIC1Columns(pwm,row,sc)
+	return pwm
+
+def generateMotifIC1Columns(pwm,row,sc):
+	cols = [0,1,2,3]
+	c1 = random.choice(cols)
+	cols.remove(c1)
+	c2 = random.choice(cols)
+	pwm[row,c1] = sc/2
+	pwm[row,c2] = sc - pwm[row,c1]
+
 def changeInIC(sc,c1,c2,x):
 	if x == 0:
 		return 0
@@ -77,7 +93,7 @@ def changeInIC(sc,c1,c2,x):
 
 def adjustInformationContent(pwm,sc,ic,target):
 	bound = target-ic
-	if abs(ic) < abs(target):
+	if ic < target:
 		return raiseInformationContent(pwm,sc,bound)
 	else:
 		return lowerInformationContent(pwm,sc,bound)
@@ -94,7 +110,7 @@ def getCellsChange(pwm):
 def raiseInformationContent(pwm,sc,bound):
 	(rowNum,colNum1,colNum2,change) = getCellsChange(pwm)
 	icChange = changeInIC(sc,pwm[rowNum,colNum1],pwm[rowNum,colNum2],change)
-	while icChange <= 0 and icChange > bound:
+	while icChange <= 0.0 and icChange > bound:
 		(rowNum,colNum1,colNum2,change) = getCellsChange(pwm)
 		icChange = changeInIC(sc,pwm[rowNum,colNum1],pwm[rowNum,colNum2],change)
 	pwm[rowNum,colNum1] = pwm[rowNum,colNum1] + change
@@ -105,7 +121,7 @@ def raiseInformationContent(pwm,sc,bound):
 def lowerInformationContent(pwm,sc,bound):
 	(rowNum,colNum1,colNum2,change) = getCellsChange(pwm)
 	icChange = changeInIC(sc,pwm[rowNum,colNum1],pwm[rowNum,colNum2],change)
-	while icChange >= 0 and icChange < bound:
+	while icChange >= 0.0 and icChange < bound:
 		(rowNum,colNum1,colNum2,change) = getCellsChange(pwm)
 		icChange = changeInIC(sc,pwm[rowNum,colNum1],pwm[rowNum,colNum2],change)
 	pwm[rowNum,colNum1] = pwm[rowNum,colNum1] + change
@@ -129,7 +145,7 @@ def getInformationContent(pwm, sc):
 	for (x,y), value in numpy.ndenumerate(pwm):
 		if value != 0:
 			ic = ic + getInformationContentBase(value,sc)
-	return -1*ic
+	return ic
 
 def getInformationContentBase(value,sc):
 	if value == 0:
