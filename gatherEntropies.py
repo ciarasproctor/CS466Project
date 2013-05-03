@@ -45,6 +45,7 @@ def getPositionalEntropy(motif,predicted):
 		for b in range(4):
 			if motif[p][b] != 0 and predicted[p][b] != 0:
 				e += (motif[p][b] / sc)* math.log(((motif[p][b]/sc)/(predicted[p][b]/sc)),2)
+		e = e/len(motif)	
 		pe.append(e)
 	return pe
 
